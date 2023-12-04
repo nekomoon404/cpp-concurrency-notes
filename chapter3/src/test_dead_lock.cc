@@ -179,7 +179,7 @@ void safe_swap(big_object_mgr& objm1, big_object_mgr& objm2) {
   // std::this_thread::sleep_for(std::chrono::seconds(1));
   std::lock_guard<std::mutex> guard2(objm2.mtx_, std::adopt_lock);
 
-  // C++17支持了scoped_lock
+  // C++17支持了scoped_lock，直接用管理两个锁的生命周期
   // std::scoped_lock guard(objm1.mtx_, objm2.mtx_)
   swap(objm1.obj_, objm2.obj_);
   std::cout << "safe_swap thread [" << std::this_thread::get_id() 

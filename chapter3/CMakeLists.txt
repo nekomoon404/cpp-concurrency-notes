@@ -7,8 +7,19 @@ project(ThreadProject)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
+set(SRC_LIST "")
+set(SRC_LIST_TEMP "")
+file(GLOB SRC_LIST_TEMP
+    ${CMAKE_SOURCE_DIR}/src/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cc)
+# source_group(src FILES ${SRC_LIST_TEMP})
+set(SRC_LIST ${SRC_LIST} ${SRC_LIST_TEMP})
+
 # add the executable
-add_executable(ThreadProject thread_share_data.cc test_dead_lock.cc)
+add_executable(ThreadProject thread_share_data.cc ${SRC_LIST})
 
 # link the threads library
 find_package(Threads REQUIRED)

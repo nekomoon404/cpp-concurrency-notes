@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stack>
 #include "test_dead_lock.h"
-
+#include "hierarchial_mutex.h"
 std::mutex mtx1;
 int shared_data = 100;
 
@@ -163,6 +163,8 @@ int main() {
   // test_safe_lock();
 
   // test_danger_swap();  // 会死锁
-  test_safe_swap();
+  // test_safe_swap();
+
+  test_heirarchy_lock(); // 用层级锁检查死锁
   return 0;
 }
