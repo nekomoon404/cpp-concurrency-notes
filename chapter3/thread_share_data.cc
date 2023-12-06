@@ -41,6 +41,37 @@ void test_lock() {
   t2.join();
 }
 
+// 不用在锁保护的范围内传递被保护数据成员的指针或引用，包括：returning them from a function, 
+// storing them in externally visibile memory, or passing them as arguments to user-supplied function
+// 否则可能会破坏对被保护数据互斥访问的效果，造成恶性条件竞争
+// 错误示例：类成员函数将被保护数据的指针传递给外部函数，外部函数使用数据就不受mutex保护了
+class some_data {
+  int a;
+  std::string b;
+ public:
+ void do_something() { a++; }
+};
+class data_wrapper {
+  private:
+  some_data data;
+  std::mutex m;
+  public:
+  template<typename Function>
+  void process_data(Function func) {
+    std::lock_guard<std::mutex> lock(m);
+    func(data);  // pass protected data to user-supplied function
+  }
+};
+some_data* unprotected;
+void malicious_func(some_data& protected_data) {
+  unprotected = &protected_data;
+}
+data_wrapper x;
+void test_unsafe_member_func() {
+  x.process_data(malicious_func);
+  unprotected->do_something();  // unprotected access to protected data
+}
+
 // 3.数据安全的错误示例，有时会将对共享数据的访问和修改封装到一个函数里
 // 即使在函数内部可以做到线程安全，但如果有返回值给外部使用，则可能存在不安全性
 template<typename T>
