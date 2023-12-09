@@ -99,8 +99,8 @@ class some_big_object {
 
   // 重载赋值运算符（拷贝赋值）
   // 如果没实现移动赋值，obj1=std::move(obj2); 则是调拷贝赋值
-  some_big_object& operator = (const some_big_object& other) {
-    if(this == &other) {
+  some_big_object& operator=(const some_big_object& other) {
+    if (this == &other) {
       return *this;
     }
     data_ = other.data_;
@@ -108,7 +108,7 @@ class some_big_object {
   }
 
   // 移动赋值
-  some_big_object& operator = (const some_big_object&& other) {
+  some_big_object& operator=(const some_big_object&& other) {
     data_ = std::move(other.data_);
     return *this;
   }
@@ -125,31 +125,30 @@ class some_big_object {
     some_big_object temp = std::move(b1);
     b1 = std::move(b2);
     b2 = std::move(temp);
-  } 
+  }
+
  private:
   int data_;
 };
 
 // big_object管理者
 class big_object_mgr {
-public:
+ public:
   big_object_mgr(int data = 0) : obj_(data) {}
-  void printinfo() {
-    std::cout << "current obj data is " << obj_ << std::endl;
-  }
+  void printinfo() { std::cout << "current obj data is " << obj_ << std::endl; }
 
   friend void danger_swap(big_object_mgr& objm1, big_object_mgr& objm2);
   friend void safe_swap(big_object_mgr& objm1, big_object_mgr& objm2);
   friend void safe_swap_scope(big_object_mgr& objm1, big_object_mgr& objm2);
- 
-private:
+
+ private:
   std::mutex mtx_;
   some_big_object obj_;
 };
 
 void danger_swap(big_object_mgr& objm1, big_object_mgr& objm2) {
-  std::cout << "thread [" << std::this_thread::get_id() 
-    << "] begin" << std::endl;
+  std::cout << "thread [" << std::this_thread::get_id() << "] begin"
+            << std::endl;
   if (&objm1 == &objm2) {
     return;
   }
@@ -161,36 +160,39 @@ void danger_swap(big_object_mgr& objm1, big_object_mgr& objm2) {
   std::lock_guard<std::mutex> lock2(objm2.mtx_);
   swap(objm1.obj_, objm2.obj_);
 
-  std::cout << "thread [" << std::this_thread::get_id() 
-    << "] end" << std::endl;
+  std::cout << "thread [" << std::this_thread::get_id() << "] end" << std::endl;
 }
 
 void safe_swap(big_object_mgr& objm1, big_object_mgr& objm2) {
-  std::cout << "safe_swap thread [" << std::this_thread::get_id() 
-    << "] begin" << std::endl;
+  std::cout << "safe_swap thread [" << std::this_thread::get_id() << "] begin"
+            << std::endl;
   if (&objm1 == &objm2) {
     return;
   }
 
   std::lock(objm1.mtx_, objm2.mtx_);
   // “领养锁”机制管理互斥量解锁
-  std::lock_guard<std::mutex> guard1(objm1.mtx_, std::adopt_lock); // std::adopt_lock，那么guard只负责mutex的解锁
+  // / std::adopt_lock，那么guard只负责mutex的解锁，不会在构造函数中对mutex加锁
+  std::lock_guard<std::mutex> guard1(objm1.mtx_, std::adopt_lock);
   // 和dead_swap()一样，中间sleep 1s
   // std::this_thread::sleep_for(std::chrono::seconds(1));
   std::lock_guard<std::mutex> guard2(objm2.mtx_, std::adopt_lock);
 
   // C++17支持了scoped_lock，直接用管理两个锁的生命周期
   // std::scoped_lock guard(objm1.mtx_, objm2.mtx_)
+  // 使用到两个C++17的特性：可变参数模板，类模板参数自动推导
   swap(objm1.obj_, objm2.obj_);
-  std::cout << "safe_swap thread [" << std::this_thread::get_id() 
-    << "] end" << std::endl;
+  std::cout << "safe_swap thread [" << std::this_thread::get_id() << "] end"
+            << std::endl;
 }
 
 void test_danger_swap() {
   big_object_mgr objm1(5);
   big_object_mgr objm2(100);
-  std::thread t1(danger_swap, std::ref(objm1), std::ref(objm2)); // 线程1会先对objm1加锁
-  std::thread t2(danger_swap, std::ref(objm2), std::ref(objm1)); // 线程2会先对objm2加锁
+  std::thread t1(danger_swap, std::ref(objm1),
+                 std::ref(objm2));  // 线程1会先对objm1加锁
+  std::thread t2(danger_swap, std::ref(objm2),
+                 std::ref(objm1));  // 线程2会先对objm2加锁
   t1.join();
   t2.join();
 

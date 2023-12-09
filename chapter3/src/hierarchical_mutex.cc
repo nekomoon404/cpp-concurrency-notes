@@ -1,4 +1,4 @@
-#include "hierarchial_mutex.h"
+#include "hierarchical_mutex.h"
 
 #include <climits>
 #include <mutex>
@@ -7,66 +7,66 @@
 // 则可以通过层级锁来保证对多个互斥量加锁是有序的
 // 思路是保证每个线程加锁时，先加权重高的锁，
 // 通过将当前锁的权重保存在线程变量中，线程再次加锁时只能加比当前锁权重更小的锁
-class hierarchial_mutex {
+class hierarchical_mutex {
  public:
-  explicit hierarchial_mutex(unsigned long value)
-      : hierarchial_value_(value), previous_hierarchial_value_(0) {}
+  explicit hierarchical_mutex(unsigned long value)
+      : hierarchical_value_(value), previous_hierarchical_value_(0) {}
 
   // 禁用拷贝构造和拷贝赋值，则也不能移动了
-  hierarchial_mutex(const hierarchial_mutex& other) = delete;
-  hierarchial_mutex& operator=(const hierarchial_mutex&) = delete;
+  hierarchical_mutex(const hierarchical_mutex& other) = delete;
+  hierarchical_mutex& operator=(const hierarchical_mutex&) = delete;
 
   void lock() {
-    check_for_hierarchial_violation();
+    check_for_hierarchical_violation();
     internal_mutex_.lock();
-    update_hierarchial_value();
+    update_hierarchical_value();
   }
 
   void unlock() {
-    if (this_thread_hierarchial_value_ != hierarchial_value_) {
+    if (this_thread_hierarchical_value_ != hierarchical_value_) {
       // 加锁和解锁不是同一把锁，说明有问题
       throw std::logic_error("mutex hierarchy violated");
     }
-    this_thread_hierarchial_value_ = previous_hierarchial_value_;
+    this_thread_hierarchical_value_ = previous_hierarchical_value_;
     internal_mutex_.unlock();
   }
 
   bool try_lock() {
-    check_for_hierarchial_violation();
+    check_for_hierarchical_violation();
     if (!internal_mutex_.try_lock()) {
       return false;
     }
-    update_hierarchial_value();
+    update_hierarchical_value();
     return true;
   }
 
  private:
   std::mutex internal_mutex_;
   // 当前层级值
-  unsigned long const hierarchial_value_;
+  unsigned long const hierarchical_value_;
   // 上一级层级值
-  unsigned long previous_hierarchial_value_;
+  unsigned long previous_hierarchical_value_;
   // 本线程记录的层级值
-  static thread_local unsigned long this_thread_hierarchial_value_;
+  static thread_local unsigned long this_thread_hierarchical_value_;
 
-  void check_for_hierarchial_violation() {
-    if (this_thread_hierarchial_value_ <= hierarchial_value_) {
+  void check_for_hierarchical_violation() {
+    if (this_thread_hierarchical_value_ <= hierarchical_value_) {
       throw std::logic_error("mutex hierarchy violated");
     }
   }
 
-  void update_hierarchial_value() {
-    previous_hierarchial_value_ = this_thread_hierarchial_value_;
-    this_thread_hierarchial_value_ = hierarchial_value_;
+  void update_hierarchical_value() {
+    previous_hierarchical_value_ = this_thread_hierarchical_value_;
+    this_thread_hierarchical_value_ = hierarchical_value_;
   }
 };
 
-thread_local unsigned long hierarchial_mutex::this_thread_hierarchial_value_(
+thread_local unsigned long hierarchical_mutex::this_thread_hierarchical_value_(
     ULONG_MAX);
 
 void test_heirarchy_lock() {
-  hierarchial_mutex hmtx1(1000);
-  hierarchial_mutex hmtx2(500);
+  hierarchical_mutex hmtx1(1000);
+  hierarchical_mutex hmtx2(500);
 
   std::thread t1([&hmtx1, &hmtx2]() {
     hmtx1.lock();

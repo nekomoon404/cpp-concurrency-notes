@@ -1,2 +1,5 @@
 chapter*/build/
+chapter*/cmake-build-debug/
 .vscode/
+.idea/
+.clang-format
