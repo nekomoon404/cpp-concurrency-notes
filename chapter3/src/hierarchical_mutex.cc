@@ -5,7 +5,7 @@
 #include <thread>
 // 8. 层级锁，有时需要两个锁分开加锁，又要保证安全性，
 // 则可以通过层级锁来保证对多个互斥量加锁是有序的
-// 思路是保证每个线程加锁时，先加权重高的锁，
+// 思路是保证每个线程加锁时，先加level高的锁，加锁的顺序只能是从高到低
 // 通过将当前锁的权重保存在线程变量中，线程再次加锁时只能加比当前锁权重更小的锁
 class hierarchical_mutex {
  public:
@@ -46,7 +46,8 @@ class hierarchical_mutex {
   unsigned long const hierarchical_value_;
   // 上一级层级值
   unsigned long previous_hierarchical_value_;
-  // 本线程记录的层级值
+  // 使用thread_local变量记录当前线程的层级值
+  // every thread has its own copy, the state of the variable in one thread is indepedent
   static thread_local unsigned long this_thread_hierarchical_value_;
 
   void check_for_hierarchical_violation() {

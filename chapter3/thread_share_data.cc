@@ -6,6 +6,7 @@
 #include "hierarchical_mutex.h"
 #include "test_dead_lock.h"
 #include "other_locks.h"
+#include "singleton_pattern.h"
 std::mutex mtx1;
 int shared_data = 100;
 
@@ -208,9 +209,16 @@ int main() {
   // test_danger_swap();  // 会死锁
   // test_safe_swap();
 
-  test_heirarchy_lock();  // 用层级锁检查死锁
+  // test_heirarchy_lock();  // 用层级锁检查死锁
 
   // use_own_lock(); // unique_lock示例，会死锁
+
+  // 单例模式示例
+  // test_single();
+  // test_single2hungry();
+  // test_single_lazy();
+  // test_single_auto();
+  test_single_callonce();
 
   return 0;
 }
