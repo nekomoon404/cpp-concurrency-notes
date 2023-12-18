@@ -5,6 +5,8 @@
 #include <thread>
 
 #include "threadsafe_queue.h"
+#include "future_sample.h"
+#include "thread_pool.h"
 // 1. C++标准提供了两种条件变量:
 // std::condition_variable 和 std::condition_variable_any
 std::mutex mtx;
@@ -109,7 +111,7 @@ void TestSafeQueue() {
         std::lock_guard<std::mutex> lock(print_mtx);
         std::cout << "constumer1 wait_and_pop data is " << *data << std::endl;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   });
 
@@ -122,7 +124,7 @@ void TestSafeQueue() {
           std::cout << "constumer2 try_pop data is " << *data << std::endl;
         }
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   });
 
@@ -134,7 +136,41 @@ void TestSafeQueue() {
 int main() {
   // TestCondSample();
   // AlternatePrint();
-  TestSafeQueue();
+  // TestSafeQueue();
+
+  // async, packaged_task, promise示例
+  // use_async();
+  // use_packaged_task();
+
+  // 线程池示例
+  int m = 0;
+  // ThreadPool::instance().Commit([](int& m) {
+  //   m = 1024;
+  //   std::cout << "inner set m is " << m << std::endl;
+  //   std::cout << "m address is " << &m << std::endl;
+  // }, m);
+
+  // std::this_thread::sleep_for(std::chrono::seconds(3));
+  // std::cout << "m is " << m << std::endl;
+  // std::cout << "m address is " << &m << std::endl;
+  
+  // 执行后会发现子线程和主线程中变量m的值和地址不一样
+  // 关注Commit的参数Args&&...args右值引用的模板, 
+  // 特化成int&&&m, 然后引用折叠成int& m, 即一个左值引用
+  // std::bind构造函数里通过 decay_t<_Types> 会把引用去掉(这里_Types是int&), 
+  // 即变成了右值/副本, 所以子线程修改的是m副本的值
+
+  // 正确的写法
+  ThreadPool::instance().Commit([](int& m) {
+    m = 1024;
+    std::cout << "inner set m is " << m << std::endl;
+    std::cout << "m address is " << &m << std::endl;
+  }, std::ref(m));
+  // std::ref则是封装了一个wrapper, 它实现了一个仿函数, 返回m的地址
+
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  std::cout << "m is " << m << std::endl;
+  std::cout << "m address is " << &m << std::endl;
 
   return 0;
 }
