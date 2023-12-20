@@ -66,7 +66,8 @@ void use_packaged_task() {
   std::future<int> result = task.get_future();
 
   // 在另一个线程上执行任务
-  // 注意packaged_task是可移动不可拷贝的, 因为其内部包含的std::future是不可拷贝的
+  // 注意packaged_task是可移动不可拷贝的,
+  // 因为其内部包含的std::future是不可拷贝的
   std::thread t(std::move(task));
   t.detach();
 
@@ -78,5 +79,134 @@ void use_packaged_task() {
 // 4. std::promise, 可以在一个线程中通过存储一个值或异常,
 // 并允许在另一个线程中通过与std::promise关联的std::future获取这个值或异常;
 // 通常用于异步计算结果的传递, 线程间的事件通知, 或是线程间异常的传递
+// 相比std::async和std::packaged_task, std::promise允许任务线程
+// 自定set value的时机, 使关联的std::future状态为ready
+void set_value(std::promise<int> prom) {
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  prom.set_value(10);
+}
+
+void use_promise() {
+  std::promise<int> prom;
+  // 获取与promise关联的future对象
+  std::future<int> fut = prom.get_future();
+  // 任务线程负责设置prom的值
+  std::thread t(set_value, std::move(prom));
+  // 在主线程获取future的值
+  std::cout << "Waiting for the thread to set the value..." << std::endl;
+  std::cout << "Value set by the thread: " << fut.get() << std::endl;
+
+  t.join();
+}
+
+// 5.1. 将异常保存到future中, 如果async调用的函数,
+// 或者packaged_task封装的函数抛出异常, 则异常会保存到与其关联的future中;
+// 当调用future的get()函数时, 保存的异常就被抛出
+void may_throw() { throw std::runtime_error("Oops, something went wrong"); }
+
+void use_async_throw_exception() {
+  std::future<void> result(std::async(std::launch::async, may_throw));
+
+  try {
+    result.get();
+  } catch (const std::exception& e) {
+    std::cerr << "Caught exception: " << e.what() << std::endl;
+  }
+}
+
+// 5.2. promise可以通过set_exception()函数显式地设置异常,
+// 该方法接受一个std::exception_ptr参数,
+// 该参数可以通过调用std::current_exception()函数获取
+void set_exception(std::promise<void> prom) {
+  try {
+    throw std::runtime_error("An error ocurred!");
+  } catch (...) {
+    prom.set_exception(std::current_exception());
+  }
+}
+
+void use_promoise_set_exception() {
+  std::promise<void> prom;
+  std::future<void> fut = prom.get_future();
+  // 任务线程设置promise的异常
+  std::thread t(set_exception, std::move(prom));
+  // 在主线程获取future中保存的异常
+  try {
+    std::cout << "Waiting for the thread to set the exception..." << std::endl;
+    fut.get();
+  } catch (const std::exception& e) {
+    std::cout << "Exception set by the thread: " << e.what() << std::endl;
+  }
+  t.join();
+}
+
+// 5.3. 如果不调用promise的两个set函数, 或者没有执行packaged_task封装的函数,
+// 就将promise/packaged_task对象销毁了, 析构函数会在future中保存异常
+// 当其他线程再调用与之关联的future的get()函数时就会报错
+void set_value_fake(std::promise<int> prom) {
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  // prom.set_value(10);
+}
+
+void use_promise_destruct() {
+  std::thread t;
+  std::future<int> fut;
+  {
+    std::promise<int> prom;
+    fut = prom.get_future();
+    t = std::thread(set_value_fake, std::move(prom));
+  }  // 离开局部作用域, promise被析构
+  // 在主线程获取future的值, 会报错std::future_error::Broken promise
+  std::cout << "Waiting for the thread to set the value..." << std::endl;
+  std::cout << "Value set by the thread: " << fut.get() << std::endl;
+  t.join();
+}
+
+void use_packaged_task_destruct() {
+  std::thread t;
+  std::future<int> fut;
+  {
+    std::packaged_task<int()> task(my_task);
+    fut = task.get_future();
+    // 这里不执行task
+    // t = std::thread(std::move(task));
+    // t.detach();
+  }
+  // 在主线程获取future的值, 会报错std::future_error::Broken promise
+  std::cout << "Waiting for the thread to set the value..." << std::endl;
+  std::cout << "Value set by the thread: " << fut.get() << std::endl;
+}
+
+// 6. std::shared_future允许多个线程等待同一目标事件,
+// 使用时向每个线程传递std::shared_future对象的副本,
+// 它们通过自有的std::shared_future对象读取状态数据, 访问是安全的
+void MyFunction(std::promise<int>&& promise) {
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  promise.set_value(42);
+}
+
+void ThreadFunction(std::shared_future<int> future) {
+  try {
+    int result = future.get();
+    std::cout << "Result: " << result << std::endl;
+  } catch (const std::future_error& e) {
+    std::cout << "Future error: " << e.what() << std::endl;
+  }
+}
+
+void use_shared_future() {
+  std::promise<int> prom;
+  std::shared_future<int> sf(prom.get_future());  // 隐式转移归属权
+  // auto sf = prom.get_future().share();   // 也可以这样创建
+
+  std::thread my_thread1(MyFunction, std::move(prom));
+  // 将shared_future的副本传递给子线程,
+  std::thread my_thread2(ThreadFunction, sf);
+  std::thread my_thread3(ThreadFunction, sf);
+
+  my_thread1.join();
+  my_thread2.join();
+  my_thread3.join();
+}
 
 #endif

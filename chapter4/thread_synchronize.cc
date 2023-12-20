@@ -134,15 +134,28 @@ void TestSafeQueue() {
 }
 
 int main() {
+  // 1. 条件变量示例
   // TestCondSample();
   // AlternatePrint();
   // TestSafeQueue();
 
-  // async, packaged_task, promise示例
+
+  // 2. async, packaged_task, promise示例
   // use_async();
   // use_packaged_task();
+  // use_promise();
 
-  // 线程池示例
+
+  // 3. 线程间抛出异常示例
+  // use_async_throw_exception();
+  // use_promoise_set_exception();
+  // use_promise_destruct();
+  // use_packaged_task_destruct();
+
+  // 4. shared_future示例
+  // use_shared_future();
+
+  // 5. 线程池示例
   int m = 0;
   // ThreadPool::instance().Commit([](int& m) {
   //   m = 1024;
