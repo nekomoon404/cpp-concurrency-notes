@@ -7,6 +7,7 @@
 #include "threadsafe_queue.h"
 #include "future_sample.h"
 #include "thread_pool.h"
+#include "parallel_quick_sort.h"
 // 1. C++标准提供了两种条件变量:
 // std::condition_variable 和 std::condition_variable_any
 std::mutex mtx;
@@ -184,6 +185,12 @@ int main() {
   std::this_thread::sleep_for(std::chrono::seconds(3));
   std::cout << "m is " << m << std::endl;
   std::cout << "m address is " << &m << std::endl;
+
+
+  // 6. 并行版快速排序示例
+  // test_sequential_sort();
+  // test_parallel_sort();
+  // test_thread_pool_sort();
 
   return 0;
 }
