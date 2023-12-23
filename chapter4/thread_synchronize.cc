@@ -8,6 +8,7 @@
 #include "future_sample.h"
 #include "thread_pool.h"
 #include "parallel_quick_sort.h"
+#include "csp_sample.h"
 // 1. C++标准提供了两种条件变量:
 // std::condition_variable 和 std::condition_variable_any
 std::mutex mtx;
@@ -134,46 +135,28 @@ void TestSafeQueue() {
   constumer2.join();
 }
 
-int main() {
-  // 1. 条件变量示例
-  // TestCondSample();
-  // AlternatePrint();
-  // TestSafeQueue();
-
-
-  // 2. async, packaged_task, promise示例
-  // use_async();
-  // use_packaged_task();
-  // use_promise();
-
-
-  // 3. 线程间抛出异常示例
-  // use_async_throw_exception();
-  // use_promoise_set_exception();
-  // use_promise_destruct();
-  // use_packaged_task_destruct();
-
-  // 4. shared_future示例
-  // use_shared_future();
-
-  // 5. 线程池示例
+// 线程池使用示例
+void use_thread_pool_false() {
   int m = 0;
-  // ThreadPool::instance().Commit([](int& m) {
-  //   m = 1024;
-  //   std::cout << "inner set m is " << m << std::endl;
-  //   std::cout << "m address is " << &m << std::endl;
-  // }, m);
+  ThreadPool::instance().Commit([](int& m) {
+    m = 1024;
+    std::cout << "inner set m is " << m << std::endl;
+    std::cout << "m address is " << &m << std::endl;
+  }, m);
 
-  // std::this_thread::sleep_for(std::chrono::seconds(3));
-  // std::cout << "m is " << m << std::endl;
-  // std::cout << "m address is " << &m << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  std::cout << "m is " << m << std::endl;
+  std::cout << "m address is " << &m << std::endl;
   
   // 执行后会发现子线程和主线程中变量m的值和地址不一样
   // 关注Commit的参数Args&&...args右值引用的模板, 
   // 特化成int&&&m, 然后引用折叠成int& m, 即一个左值引用
   // std::bind构造函数里通过 decay_t<_Types> 会把引用去掉(这里_Types是int&), 
   // 即变成了右值/副本, 所以子线程修改的是m副本的值
+}
 
+void use_thread_pool() {
+  int m = 0;
   // 正确的写法
   ThreadPool::instance().Commit([](int& m) {
     m = 1024;
@@ -185,12 +168,39 @@ int main() {
   std::this_thread::sleep_for(std::chrono::seconds(3));
   std::cout << "m is " << m << std::endl;
   std::cout << "m address is " << &m << std::endl;
+}
 
+int main() {
+  // 1. 条件变量示例
+  // TestCondSample();
+  // AlternatePrint();
+  // TestSafeQueue();
+
+  // 2. async, packaged_task, promise示例
+  // use_async();
+  // use_packaged_task();
+  // use_promise();
+
+  // 3. 线程间抛出异常示例
+  // use_async_throw_exception();
+  // use_promoise_set_exception();
+  // use_promise_destruct();
+  // use_packaged_task_destruct();
+
+  // 4. shared_future示例
+  // use_shared_future();
+
+  // 5. 线程池示例
+  // use_thread_pool_false();
+  // use_thread_pool();
 
   // 6. 并行版快速排序示例
   // test_sequential_sort();
   // test_parallel_sort();
   // test_thread_pool_sort();
+
+  // 7. csp并发模式示例
+  use_csp_sample();
 
   return 0;
 }
