@@ -19,7 +19,7 @@ class queue {
     // 这里没限制队列的最大容量，插入时也就没判断队列是否已满
     std::lock_guard<std::mutex> lock(mtx_);
     // 将消息包装并插入队列
-    queue_.push(std::shared_ptr<wrapped_messgae<Msg>>(msg));
+    queue_.push(std::make_shared<wrapped_messgae<Msg>>(msg));
     cv_.notify_all();
   }
 

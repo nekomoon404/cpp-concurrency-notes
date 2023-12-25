@@ -3,7 +3,7 @@
 
 namespace messaging {
 // 示意关闭队列的消息
-class close_queue {};
+struct close_queue {};
 
 // 消息分发类模板, 为了方便理解先阅读下面的dispatcher类吧
 template <typename PreviousDispatcher, typename Msg, typename Func>

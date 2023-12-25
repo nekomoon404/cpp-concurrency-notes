@@ -22,7 +22,7 @@ class sender {
 };
 
 // 消息的接受者
-class recevier {
+class receiver {
   // 消息队列始终被接受者持有
   queue que_;
 
