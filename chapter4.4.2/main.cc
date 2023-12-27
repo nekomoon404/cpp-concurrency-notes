@@ -1,18 +1,20 @@
 #include "atm.h"
+#include "bank.h"
 #include "dispatcher.h"
 #include "thread"
 #include "user_interface.h"
 // 4.2.2节使用CSP模式实现的atm机程序示例
 
 int main() {
-  messaging::sender bank;
-  user_interface ui;
-  atm machine(bank, ui.get_sender());
+  Bank bank;
+  UserInterface ui;
+  Atm atm(bank.get_sender(), ui.get_sender());
 
-  std::thread ui_thread(&user_interface::run, &ui);
-  std::thread atm_thread(&atm::run, &machine);
+  std::thread bank_thread(&Bank::run, &bank);
+  std::thread ui_thread(&UserInterface::run, &ui);
+  std::thread atm_thread(&Atm::run, &atm);
 
-  messaging::sender sender_to_atm(machine.get_sender());
+  messaging::sender sender_to_atm(atm.get_sender());
   bool quit_pressed = false;
   while (!quit_pressed) {
     char ch = getchar();
@@ -37,11 +39,16 @@ int main() {
       case 'i':
         sender_to_atm.send(card_inserted("acc1234"));
         break;
+      case 'w':
+        sender_to_atm.send(withdraw_pressed(50));
+        break;
     }
   }
 
+  bank.done();
   ui.done();
-  machine.done();
+  atm.done();
+  bank_thread.join();
   ui_thread.join();
   atm_thread.join();
 

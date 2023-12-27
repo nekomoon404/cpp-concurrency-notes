@@ -5,7 +5,7 @@
 
 #include "receiver.h"
 // UI线程没有状态(或者说只有一种状态，就是等待消息)，只负责处理消息
-class user_interface {
+class UserInterface {
  private:
   std::mutex ui_mtx_;
   messaging::receiver incoming;
@@ -35,7 +35,61 @@ class user_interface {
                     std::cout << "Please enter you pin (0~9)" << std::endl;
                   }
                 },
-                "dispaly_enter_pin");
+                "dispaly_enter_pin")
+            .handle<
+                display_pin_incorrect_message,
+                std::function<void(display_pin_incorrect_message const& msg)>>(
+                [&](display_pin_incorrect_message const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lock(ui_mtx_);
+                    std::cout << "Pin is incorrect." << std::endl;
+                  }
+                },
+                "display_pin_incorrect_message")
+            .handle<display_withdrawal_options,
+                    std::function<void(display_withdrawal_options const& msg)>>(
+                [&](display_withdrawal_options const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lk(ui_mtx_);
+                    std::cout << "Withdraw 50? (w)" << std::endl;
+                    std::cout << "Cancel? (c)" << std::endl;
+                  }
+                },
+                "display_withdrawal_options")
+            .handle<issue_money, std::function<void(issue_money const& msg)>>(
+                [&](issue_money const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lock(ui_mtx_);
+                    std::cout << "Issuing $" << msg.amount_ << std::endl;
+                  }
+                },
+                "issue_money")
+            .handle<display_insufficient_funds,
+                    std::function<void(display_insufficient_funds const& msg)>>(
+                [&](display_insufficient_funds const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lock(ui_mtx_);
+                    std::cout << "Insufficient funds." << std::endl;
+                  }
+                },
+                "display_insufficient_funds")
+            .handle<display_withdrawal_canceled,
+                    std::function<void(display_withdrawal_canceled const& msg)>>(
+                [&](display_withdrawal_canceled const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lock(ui_mtx_);
+                    std::cout << "Withdrawal canceled." << std::endl;
+                  }
+                },
+                "display_withdrawal_canceled")
+            .handle<eject_card, std::function<void(eject_card const& msg)>>(
+                [&](eject_card const& msg) {
+                  {
+                    std::lock_guard<std::mutex> lk(ui_mtx_);
+                    std::cout << "Ejecting card" << std::endl;
+                  }
+                },
+                "eject_card");
       }
     } catch (messaging::close_queue&) {
     }
