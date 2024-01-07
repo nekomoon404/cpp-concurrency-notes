@@ -75,6 +75,7 @@ std::list<T> parallel_quick_sort(std::list<T> input) {
       std::async(&parallel_quick_sort<T>, std::move(lower_part));
   // parallel_quick_sort前也可以不加取地址符
 
+  // 当前线程来处理higher_part的排序
   auto new_higher(parallel_quick_sort(std::move(input)));
 
   result.splice(result.end(), new_higher);
@@ -110,7 +111,7 @@ std::list<T> thread_pool_quick_sort(std::list<T> input) {
   std::list<T> lower_part;
   lower_part.splice(lower_part.begin(), input, input.begin(), divide_point);
 
-  // 将lower_part部分的排序提交给线程池
+  // 将lower_part部分的排序提交给线程池，Commit返回一个std::future对象
   auto new_lower = ThreadPool::instance().Commit(&parallel_quick_sort<T>,
                                                  std::move(lower_part));
 

@@ -27,6 +27,7 @@ class receiver {
   queue que_;
 
  public:
+  // 实现了由receiver类型向sender类型的隐式转换
   operator sender() { return sender(&que_); }
   // 等待行为会返回一个dispatcher对象
   dispatcher wait() { return dispatcher(&que_); }

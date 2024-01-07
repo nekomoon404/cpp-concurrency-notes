@@ -31,9 +31,9 @@ void transfer_oops() {
 
   // 转移t3管理的线程给t1，这里会crash
   // t1 = std::move(t3);
-  // t1已经有关联的线程了，再给t3管理的线程转移给t1，
+  // t1已经有关联的线程了，再将t3管理的线程转移给t1，
   // 会触发std::terminate()终止程序(在std::thread的析构函数内调用)
-  // 因此不能通过向管理线程的std::thread对象 转移新线程 而drop它当前管理的线程
+  // 因此不能通过向管理线程的std::thread对象 转移新线程 的方式来drop它当前管理的线程
 
   // 排除是因为主线程退出导致的crash
   // std::this_thread::sleep_for(std::chrono::seconds(2000));

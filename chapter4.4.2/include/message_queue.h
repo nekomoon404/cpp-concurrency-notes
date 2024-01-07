@@ -34,6 +34,7 @@ class queue {
     cv_.notify_all();
   }
 
+  // pop操作则是返回一个消息基类的指针
   std::shared_ptr<message_base> wait_and_pop() {
     std::unique_lock<std::mutex> lock(mtx_);
     cv_.wait(lock, [this]() { return !queue_.empty(); });

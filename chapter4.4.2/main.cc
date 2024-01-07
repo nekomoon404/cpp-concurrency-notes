@@ -9,6 +9,8 @@ int main() {
   Bank bank;
   UserInterface ui;
   Atm atm(bank.get_sender(), ui.get_sender());
+  // 三个actor类都有自己的用来接收消息的队列，被receiver成员变量持有
+  // atm线程还需要负责向另外两个线程发送消息，ui和bank线程只需要负责处理消息
 
   std::thread bank_thread(&Bank::run, &bank);
   std::thread ui_thread(&UserInterface::run, &ui);

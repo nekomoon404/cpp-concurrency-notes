@@ -11,12 +11,13 @@
 // std::future::get() 阻塞调用, 用于获取std::future对象关联的值或异常,
 // 如果异步任务还没完成, get()会阻塞当前线程; get()只能调用一次
 
-// std::future::wait() 阻塞调用, 只等待异步任务完成不返回future关联的值
+// std::future::wait() 阻塞调用, 只等待异步任务完成，不返回future关联的值
 // wait()可以多次调用
 
 // std::future 本身不提供同步访问机制，如果存在多个线程访问
 // std::future对象的情况，需要用mutex或其他同步机制来保护它
 // 通常与std::promoise, std::packaged_task, std::async一起使用
+
 
 // 2. std::async是用于启动异步任务的函数模板, 它返回一个std::future对象
 // 通过future对象获取异步执行函数的返回值, 当需要用到这个值时, 就调用
@@ -42,9 +43,10 @@ void use_async() {
 // std::async的启动策略:
 // (1) std::launch::async, 指定异步执行, 即新开辟一个线程执行输入的函数
 // (2) std::launch::deferred,
-// 任务将在调用std::future::get()或std::future::wait()时才执行 (3)
-// std::launch::async | std::launch::deferred, 默认策略,
+// 任务将在调用std::future::get()或std::future::wait()时才执行
+// (3) std::launch::async | std::launch::deferred, 默认策略,
 //     采用哪种由std::async的具体实现决定, 取决于编译器和标准库的实现
+
 
 // 3. std::packaged_task<>是一个类模板, 模板参数是函数签名function signature
 // 它包装了一个可调用对象, 允许异步获取该可调用对象的结果;
@@ -75,6 +77,7 @@ void use_packaged_task() {
   int value = result.get();
   std::cout << "The result is: " << value << std::endl;
 }
+
 
 // 4. std::promise, 可以在一个线程中通过存储一个值或异常,
 // 并允许在另一个线程中通过与std::promise关联的std::future获取这个值或异常;
@@ -198,6 +201,9 @@ void use_shared_future() {
   std::promise<int> prom;
   std::shared_future<int> sf(prom.get_future());  // 隐式转移归属权
   // auto sf = prom.get_future().share();   // 也可以这样创建
+  // 即需要由std::future的实例来构造std::shared_future的实例
+  // 且是通过移动构造将归属权转移给std::shared_future，之后原来的std::future变成无效
+  // future和promoise都提供了函数valid()，用于判别异步状态(也叫共享状态)是否有效；
 
   std::thread my_thread1(MyFunction, std::move(prom));
   // 将shared_future的副本传递给子线程,

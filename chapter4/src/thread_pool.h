@@ -31,7 +31,7 @@ class ThreadPool {
 
   using Task = std::packaged_task<void()>;
 
-  // 可变参数模板
+  // 可变参数模板，返回一个std::future<T>的对象，T是函数f的返回值类型
   template <class F, class... Args>
   auto Commit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
     using RetType = decltype(f(args...));
@@ -69,12 +69,13 @@ class ThreadPool {
           Task task;
           {
             std::unique_lock<std::mutex> lock(mtx_);
+            // 等线程池停止，或者任务队列不为空
             cv_.wait(lock, [this]() {
               return this->stop_.load() || !tasks_.empty();
             });
 
+            // 被唤醒后可能是stop为true但任务队列为空, 所以需要再次检查任务队列是否为空
             if (tasks_.empty()) {
-              // 可能是被stop=true唤醒, 所以需要再次检查任务队列是否为空
               return;
             }
             task = std::move(tasks_.front());

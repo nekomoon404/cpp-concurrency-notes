@@ -7,7 +7,7 @@ void thread_work1(std::string str) {
   std::cout << "str is " << str << std::endl;
 }
 
-// 2.仿函数作为参数，仿函数可以作为算法函数的参数传递
+// 2.仿函数作为参数，仿函数可以作为函数的参数传递
 class background_task {
  public:
   void operator()() { std::cout << "background_taskc called" << std::endl; }
@@ -139,7 +139,7 @@ int main() {
   std::thread t1(thread_work1, "hello thread");
   t1.join();
 
-  // std::thread t2(background_task()); 会报错
+  // std::thread t2(background_task()); 会报错，编译器将其解释为函数声明
   // 这个仿函数如果带参数也会报错，为什么？
   std::thread t3{background_task()};
   t3.join();

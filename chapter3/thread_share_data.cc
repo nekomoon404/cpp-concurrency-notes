@@ -46,7 +46,7 @@ void test_lock() {
   t2.join();
 }
 
-// 不用在锁保护的范围内传递被保护数据成员的指针或引用，包括：returning them from
+// 不要在锁保护的范围内传递被保护数据成员的指针或引用，包括：returning them from
 // a function, storing them in externally visibile memory, or passing them as
 // arguments to user-supplied function
 // 否则可能会破坏对被保护数据互斥访问的效果，造成恶性条件竞争
@@ -86,7 +86,7 @@ template <typename T>
 class threadunsafe_stack {
  private:
   std::stack<T> data;
-  // const成员函数，如果想对mutex加锁，这是一个修改行为，因此要将mutex对象声明为mutable
+  // const成员函数，如果想对mutex加锁，加锁是一个修改行为，因此要将mutex对象声明为mutable
   mutable std::mutex m;
 
  public:
@@ -110,12 +110,12 @@ class threadunsafe_stack {
     auto element = data.top();
     data.pop();
     return element;
-    // 返回局部变量时优先执行移动构造，RVO优化
+    // 返回局部变量时优先寻找移动构造（RVO优化），若没有则寻找拷贝构造
   }
 
   // 问题代码，empty的bool值返回给外部，使用的时机不知道
-  // 比如线程A先检查stack.empty()，然后调用top()操作；
-  // 线程B在上面两个操作之间pop()出了stack中最后一个元素，那么线程A的top()操作就有问题
+  // 比如线程A先检查stack.empty()，然后调用pop()操作；
+  // 线程B在上面两个操作之间pop()出了stack中最后一个元素，那么线程A的pop()操作就有问题
   bool empty() const {
     std::lock_guard<std::mutex> lock(m);
     return data.empty();

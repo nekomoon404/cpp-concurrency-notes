@@ -109,8 +109,9 @@ class dispatcher {
   // 尾部handle()返回的临时对象析构时会循环等待消息,
   // 当从队列取出的消息被正确处理时才会跳出循环
   // 当取出的消息与临时对象模板参数中的消息类型不匹配时，就会调用前一个临时对象的dispatch()方法
-  // 即第 行 return prev->dispatch(); 的作用
-  // 向前调用直到调用到最前面，即wait()返回的dispatcher临时对象的dispatch()方法，返回false，循环继续
+  // 即第 46 行 return prev->dispatch(); 的作用
+  // 向前调用直到调用到最前面，即wait()返回的dispatcher临时对象的dispatch()方法，返回false，
+  // 循环继续（末尾handle()临时对象析构函数里的那个循环）
   // 只有当收到close_queue消息时，才能退出循环; 这就是这个函数的作用
   bool dispatch(std::shared_ptr<message_base> const& msg) {
     // msg.get()返回存储在std::shared_ptr中的原始指针，指向shared_ptr所拥有的对象
@@ -136,9 +137,8 @@ class dispatcher {
   // recevier.wait().handle().hanle().handle()中wait()返回一个dispatch类的临时对象
   // 后面的handle()都会返回一个TemplateDispater模板类的临时对象，
   // 调用顺序是从左到右, 然后临时对象的析构顺序是从右到左
-  // 注意这里第一个模板参数指定了是dispatcher类型，因为要在TemplateDispatcher的构造函数里
-  // 将当前dispatcher的chanied_置为true，所以第一个模板参数指定为了dispatcher，
-  // 即当前类型，然后在TemplateDispatcher构造函数里传入this指针
+  // 注意因为要在TemplateDispatcher的构造函数里将当前dispatcher的chanied_置为true，
+  // 所以这里第一个模板参数指定为了dispatcher，即当前类型，然后在TemplateDispatcher构造函数里传入this指针
   template <typename Msg, typename Func>
   TemplateDispatcher<dispatcher, Msg, Func> handle(Func&& f,
                                                    std::string info_msg) {
